@@ -53,4 +53,10 @@ MANIFEST
 .conda*/
 .python-version
 example/
+
+
+
 info/
+img/
+*.gpx
+*.trk

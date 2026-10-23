@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 import pandas as pd
+import sqlalchemy
 from general_fun import connect_database
 
 sources = [
@@ -16,11 +17,24 @@ sources = [
     "Rother wandelgids Noorwegen – Jotunheimen - Rondane",
 ]
 
-ids = [uuid4() for _ in range(len(sources))]
-
-df = pd.DataFrame(data=sources, columns=["source"], index=ids)
+table_name = "hike-sources"
+column_name = "source"
 
 engine = connect_database()
 
+sql = f"""select {column_name} from "{table_name}" """
+
 with engine.connect() as conn:
-    df.to_sql("hike-sources", conn, if_exists="replace", index_label="id")
+    db = pd.read_sql(sqlalchemy.text(sql), conn)
+
+db_sources = db[column_name].values.tolist()
+
+sources = list(set(sources) - set(db_sources))
+
+if sources:
+    ids = [uuid4() for _ in range(len(sources))]
+
+    df = pd.DataFrame(data=sources, columns=[column_name], index=ids)
+
+    with engine.connect() as conn:
+        df.to_sql(table_name, conn, if_exists="append", index_label="id")
